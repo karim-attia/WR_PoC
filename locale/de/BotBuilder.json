@@ -1,0 +1,13 @@
+{
+    "default_text": "Ich konnte diese Eingabe nicht verstehen. Bitte versuchen Sie es noch einmal.",
+    "default_number": "Ich konnte diese Zahl nicht verstehen. Bitte versuchen Sie es noch einmal.",
+    "default_confirm": "Ich konnte diese Auswahl nicht verstehen. Bitte antworten Sie mit 'Ja' oder 'Nein'.",
+    "list_or": " oder ",
+    "list_or_more": ", oder ",
+    "confirm_yes": "Ja",
+    "confirm_no": "Nein",
+    "default_choice": "Ich konnte diese Auswahl nicht verstehen. Bitte wählen Sie einen Eintrag aus der Liste.",
+    "default_time": "Ich konnte dieses Datum nicht verstehen. Bitte versuchen Sie es noch einmal im Format (dd.mm.yyyy).",
+    "default_file": "Ich habe keine Datei erhalten. Bitte versuchen Sie es noch einmal.",
+    "default_error": "Oops. Etwas ist schief gelaufen und wir müssen wieder von vorn anfangen."
+} 
