@@ -2,7 +2,8 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 var botbuilder_azure = require("botbuilder-azure");
-var azure = require('botbuilder-azure'); 
+var dotenv = require('dotenv'); 
+dotenv.config()
 
 // Setup Restify Server
 var server = restify.createServer();
@@ -53,6 +54,7 @@ bot.on('conversationUpdate', function(session) {
 // Root Dialog: Refers to Use Case Choice
 bot.dialog('/', [
     function (session) {
+        console.log("lkjsadlfjdfsdfsdfs");
         var frage = "Wie kann ich Ihnen heute helfen?";
         session.beginDialog('useCaseChoice', frage);
     }
