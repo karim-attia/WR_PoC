@@ -54,7 +54,7 @@ bot.on('conversationUpdate', function(session) {
 // Root Dialog: Refers to Use Case Choice
 bot.dialog('/', [
     function (session) {
-        console.log("lkjsadlfjdfsdfsdfs");
+        console.log("lkjsadlfjddkffsdfsdadfasdfsdsfdsffs");
         var frage = "Wie kann ich Ihnen heute helfen?";
         session.beginDialog('useCaseChoice', frage);
     }
