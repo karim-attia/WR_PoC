@@ -5,6 +5,8 @@ var botbuilder_azure = require("botbuilder-azure");
 var dotenv = require('dotenv'); 
 var validIBAN = require('IBAN');
 var validCreditCard = require('card-validator');
+var nodemailer = require('nodemailer');
+var uuidv1 = require('uuid/v1');
 
 dotenv.config()
 
@@ -28,6 +30,31 @@ server.post('/api/messages', connector.listen());
 var tableName = 'botdata';
 var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
 var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
+
+// Email
+var transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'wr.proofofconcept@gmail.com',
+      pass: 'WR1234WR'
+    }
+});
+
+function sendEmail (subject, text) {
+var mailOptions = {
+    from: 'wr.proofofconcept',
+    to: 'karim.attia@synpulse.com',
+    subject: subject,
+    text: text
+};
+transporter.sendMail(mailOptions, function(error, info){
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+    }); 
+}
 
 // Create your bot with a function to receive messages from the user
 var bot = new builder.UniversalBot(connector, {
@@ -86,6 +113,7 @@ bot.dialog('useCaseChoice', [
                 break;
             case "Hilfe / Anleitung":
                 session.send("Die Hilfefunktion ist momentan noch nicht implementiert.");
+                sendEmail("Test Subject", "Test Text");
                 session.beginDialog("End");
                 break;
             default:
@@ -259,6 +287,9 @@ bot.dialog('LetztesKonto', [
 // KontoauflösungZusammenfassung
 bot.dialog('KontoauflösungZusammenfassung', [
     function (session) {
+        var KontoMail = "konto;" + session.userData.kontonummer + ";" + "\nunterschrift;" + session.userData.unterschrift + ";" + "\ntermin;" + session.userData.termin + ";" + "\nreferenzkonto;" + session.userData.referenzkonto + ";" + "\nletztesKonto;" + session.userData.letztesKonto + ";";
+        sendEmail("Kontoauflösung " + uuidv1(), KontoMail);
+
         var customMessage = new builder.Message(session)
         .addAttachment({
         contentType: "application/vnd.microsoft.card.adaptive",
@@ -294,6 +325,10 @@ bot.dialog('KontoauflösungZusammenfassung', [
     }
 ]);
 
+function generateCreditCardMail (kontonummer, kreditkartennummer, unterschrift) {
+    return "konto;" + kontonummer + ";\nkreditkartennummer;" + kreditkartennummer + ";\nunterschrift;" + unterschrift + ";"
+}
+
 // Kreditkartennummer
 bot.dialog('Kreditkartennummer', [
     function (session, args) {
@@ -319,6 +354,8 @@ bot.dialog('Kreditkartennummer', [
 // KreditkartenauflösungZusammenfassung
 bot.dialog('KreditkartenauflösungZusammenfassung', [
     function (session) {
+        var CreditCardMail = "konto;" + session.userData.kontonummer + ";" + "\nkreditkartennummer;" + session.userData.kreditkartennummer + ";" + "\nunterschrift;" + session.userData.unterschrift + ";";
+        sendEmail("Kreditkartenauflösung " + uuidv1(), CreditCardMail);
         var customMessage = new builder.Message(session)
         .addAttachment({
         contentType: "application/vnd.microsoft.card.adaptive",
@@ -348,7 +385,6 @@ bot.dialog('KreditkartenauflösungZusammenfassung', [
     }
 ]);
 
-
 function messageWithSuggestedAction (session, promptText, sendSuggestion1, displaySuggestion1, sendSuggestion2, displaySuggestion2) {
     var customMessagePrompt = new builder.Message(session)
     .text(promptText)
@@ -360,4 +396,4 @@ function messageWithSuggestedAction (session, promptText, sendSuggestion1, displ
     ]
     ));
     return customMessagePrompt;
-}             
+}

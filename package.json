@@ -14,7 +14,9 @@
     "card-validator": "^4.3.0",
     "dotenv": "^5.0.1",
     "iban": "0.0.10",
-    "restify": "^5.0.0"
+    "restify": "^5.0.0",
+    "sendmail": "^1.4.1",
+    "uuid": "^3.2.1"
   },
   "devDependencies": {
     "request": "^2.81.0",
