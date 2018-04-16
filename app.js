@@ -3,6 +3,9 @@ var restify = require('restify');
 var builder = require('botbuilder');
 var botbuilder_azure = require("botbuilder-azure");
 var dotenv = require('dotenv'); 
+var validIBAN = require('IBAN');
+var validCreditCard = require('card-validator');
+
 dotenv.config()
 
 // Setup Restify Server
@@ -29,7 +32,8 @@ var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azu
 // Create your bot with a function to receive messages from the user
 var bot = new builder.UniversalBot(connector, {
     localizerSettings: { 
-        defaultLocale: "de" 
+        botLocalePath: "./locale", 
+        defaultLocale: "de-DE"
     }
 });
 
@@ -54,7 +58,7 @@ bot.on('conversationUpdate', function(session) {
 // Root Dialog: Refers to Use Case Choice
 bot.dialog('/', [
     function (session) {
-        var frage = "Wie kann ich Ihnen heute helfesadfdsfn?";
+        var frage = "Wie kann ich Ihnen heute helfen?";
         session.beginDialog('useCaseChoice', frage);
     }
 
@@ -65,8 +69,8 @@ bot.dialog('useCaseChoice', [
     function (session, frage) {
         //var frage = "Wie kann ich Ihnen heute helfen?";
         var choices = [
-            "AufloesungKonto",
-            "AufloesungKreditkarte",
+            "Auflösung Konto",
+            "Auflösung Kreditkarte",
             "Hilfe / Anleitung",
         ];
         builder.Prompts.choice(session, frage, choices, {listStyle: builder.ListStyle["button"]});
@@ -74,11 +78,11 @@ bot.dialog('useCaseChoice', [
     function (session, results) {
         session.dialogData.useCase = results.response.entity;
         switch (session.dialogData.useCase) {
-            case "AufloesungKonto":
-                session.beginDialog("AufloesungKonto");
+            case "Auflösung Konto":
+                session.beginDialog("Auflösung Konto");
                 break;
-            case "AufloesungKreditkarte":
-                session.beginDialog("AufloesungKreditkarte");
+            case "Auflösung Kreditkarte":
+                session.beginDialog("Auflösung Kreditkarte");
                 break;
             case "Hilfe / Anleitung":
                 session.send("Die Hilfefunktion ist momentan noch nicht implementiert.");
@@ -90,8 +94,8 @@ bot.dialog('useCaseChoice', [
     }
 ]);
 
-// Use Case AufloesungKreditkarte
-bot.dialog('AufloesungKreditkarte', [
+// Use Case Auflösung Kreditkarte
+bot.dialog('Auflösung Kreditkarte', [
     function (session) {
         session.send("Sie befinden sich jetzt in der Kreditkartenauflösung. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
         session.beginDialog('Kontonummer');
@@ -109,7 +113,7 @@ bot.dialog('AufloesungKreditkarte', [
 ]);
 
 
-bot.dialog('AufloesungKonto', [
+bot.dialog('Auflösung Konto', [
     function (session) {
         session.send("Sie befinden sich jetzt in der Kontoauflösung. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
         session.beginDialog('Kontonummer');
@@ -141,7 +145,6 @@ bot.dialog('End', [
     }
 ]);
 
-
 // Stopwort
 bot.dialog('Cancel', [
     function (session) {
@@ -156,36 +159,15 @@ bot.dialog('Cancel', [
 // Konto
 bot.dialog('Kontonummer', [
     function (session, args) {
-        var customMessagePrompt = new builder.Message(session)
-            .text("Wie lautet Ihre Kontonummer?")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "1234567", "1234567"),
-					builder.CardAction.imBack(session, "123456", "123456"),                    
-				]
-			));        
-        var customMessageRePrompt = new builder.Message(session)
-            .text("Bitte geben Sie eine 7-stellige Kontonummer aus auschliesslich Zahlen an.")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "1234567", "1234567"),
-					builder.CardAction.imBack(session, "123456", "123456"),                    
-				]
-			));        
         if (args && args.reprompt) {
-            builder.Prompts.text(session, customMessageRePrompt);
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 7-stellige Kontonummer aus auschliesslich Zahlen an.", "1234567", "1234567", "123456", "123456"));
         } else {
-            builder.Prompts.text(session, customMessagePrompt);
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre Kontonummer?", "1234567", "1234567", "123456", "123456"));
         }
     },
     function (session, results) {
         session.userData.kontonummer = results.response;
         var reg = new RegExp('^\[0-9]{7}$');
-        console.log(session.userData.kontonummer);
-        console.log(reg.test(session.userData.kontonummer));
-
         if (reg.test(session.userData.kontonummer)) {
             session.endDialogWithResult(results);
         } else {
@@ -231,68 +213,31 @@ bot.dialog('Termin', [
     function (session) {
         var today = new Date();
         var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
-
-        console.log(today);
-        console.log(lastDayOfMonth);
-        
         var today = convertDate(today);
         var lastDayOfMonth = convertDate(lastDayOfMonth);
-        
-        console.log(today);
-        console.log(lastDayOfMonth);
-        var customMessage = new builder.Message(session)
-            .text("Auf welchen Zeitpunkt soll das Konto aufgelöst werden?")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, today, "Heute"),
-					builder.CardAction.imBack(session, lastDayOfMonth, "Ende Monat"),
-                ]
-			));
-        builder.Prompts.time(session, customMessage);
+        builder.Prompts.time(session, messageWithSuggestedAction(session, "Auf welchen Zeitpunkt soll das Konto aufgelöst werden?", today, "Heute", lastDayOfMonth, "Ende Monat"));
     },
     function (session, results) {
         session.userData.termin = results.response.entity;
-        console.log(results.response.entity);
         session.endDialogWithResult(results);
     }
 ]);
 
-// ^DE\d{2}\s?([0-9a-zA-Z]{4}\s?){4}[0-9a-zA-Z]{2}$
 // Referenzkonto
 bot.dialog('Referenzkonto', [
     function (session, args) {
-        var customMessagePrompt = new builder.Message(session)
-            .text("Wie lautet die IBAN ihres Referenzkontos, auf welches ein allfälliges Restguthaben überwiesen werden soll?")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30"),
-					builder.CardAction.imBack(session, "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"),
-				]
-			));        
-        var customMessageRePrompt = new builder.Message(session)
-            .text("Bitte geben Sie eine gültige IBAN ein.")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30"),
-					builder.CardAction.imBack(session, "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"),
-				]
-			));        
         if (args && args.reprompt) {
-            builder.Prompts.text(session, customMessageRePrompt);
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige IBAN ein.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         } else {
-            builder.Prompts.text(session, customMessagePrompt);
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die IBAN ihres Referenzkontos, auf welches ein allfälliges Restguthaben überwiesen werden soll?", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         }
     },
     function (session, results) {
         session.userData.referenzkonto = results.response;
-        var reg = new RegExp('^DE\\d{2}\\s?([0-9a-zA-Z]{4}\\s?){4}[0-9a-zA-Z]{2}$');
         console.log(session.userData.referenzkonto);
-        console.log(reg.test(session.userData.referenzkonto));
+        console.log("validIBAN Test: " + validIBAN.isValid(session.userData.referenzkonto));
 
-        if (reg.test(session.userData.referenzkonto)) {
+        if (validIBAN.isValid(session.userData.referenzkonto)) {
             session.endDialogWithResult(results);
         } else {
             session.replaceDialog('Referenzkonto', { reprompt: true });
@@ -300,19 +245,10 @@ bot.dialog('Referenzkonto', [
     }
 ]);
 
-// Termin
+// LetztesKonto
 bot.dialog('LetztesKonto', [
     function (session) {
-        var customMessage = new builder.Message(session)
-            .text("Ist dies Ihr letztes Konto bei uns? <br> (Ja/Nein)")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "Ja", "Ja"),
-					builder.CardAction.imBack(session, "Nein", "Nein"),
-				]
-			));
-        builder.Prompts.text(session, customMessage);
+        builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr letztes Konto bei uns? <br> (Ja/Nein)", "Ja", "Ja", "Nein", "Nein"));
     },
     function (session, results) {
         session.userData.letztesKonto = results.response;
@@ -351,7 +287,7 @@ bot.dialog('KontoauflösungZusammenfassung', [
 							"value": session.userData.referenzkonto
 						},
                         {   "title": "Letztes Konto:",
-							"value": session.userData.letzteskonto
+							"value": session.userData.letztesKonto
 						}
         ]}]}]}});
         session.send(customMessage);
@@ -360,12 +296,23 @@ bot.dialog('KontoauflösungZusammenfassung', [
 
 // Kreditkartennummer
 bot.dialog('Kreditkartennummer', [
-    function (session) {
-        builder.Prompts.number(session, "Wie lautet die Kreditkartennummer Ihrer Kreditkarte, welche Sie auflösen wollen?"); 
+    function (session, args) {
+        if (args && args.reprompt) {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige Kreditkartennummer ein.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+        } else {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die Kreditkartennummer Ihrer Kreditkarte, welche Sie auflösen wollen?", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+        }
     },
     function (session, results) {
         session.userData.kreditkartennummer = results.response;
-        session.endDialogWithResult(results);
+        console.log(session.userData.kreditkartennummer);
+        console.log("validCreditCard Test: " + validCreditCard.number(session.userData.kreditkartennummer).isValid);
+
+        if (validCreditCard.number(session.userData.kreditkartennummer).isValid) {
+            session.endDialogWithResult(results);
+        } else {
+            session.replaceDialog('Kreditkartennummer', { reprompt: true });
+        }
     }
 ]);
 
@@ -391,7 +338,7 @@ bot.dialog('KreditkartenauflösungZusammenfassung', [
 							"value": session.userData.kontonummer
 						},
 						{	"title": "Kreditkarte:",
-							"value": session.userData.kreditkarte
+							"value": session.userData.kreditkartennummer
 						},
 						{	"title": "Unterschrift bestätigt:",
 							"value": session.userData.unterschrift
@@ -400,3 +347,17 @@ bot.dialog('KreditkartenauflösungZusammenfassung', [
         session.send(customMessage);
     }
 ]);
+
+
+function messageWithSuggestedAction (session, promptText, sendSuggestion1, displaySuggestion1, sendSuggestion2, displaySuggestion2) {
+    var customMessagePrompt = new builder.Message(session)
+    .text(promptText)
+      .suggestedActions(
+        builder.SuggestedActions.create(
+    session, [
+    builder.CardAction.imBack(session, sendSuggestion1, displaySuggestion1),
+    builder.CardAction.imBack(session, sendSuggestion2, displaySuggestion2),                    
+    ]
+    ));
+    return customMessagePrompt;
+}             
