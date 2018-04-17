@@ -1,7 +1,6 @@
 // Add your requirements
 var restify = require('restify');
 var builder = require('botbuilder');
-var botbuilder_azure = require("botbuilder-azure");
 var dotenv = require('dotenv'); 
 var validIBAN = require('IBAN');
 var validCreditCard = require('card-validator');
@@ -27,31 +26,32 @@ var connector = new builder.ChatConnector({
 server.post('/api/messages', connector.listen());
 
 // Bot storage
-var tableName = 'botdata';
-var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
-var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
+//var tableName = 'botdata';
+//var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
+//var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
+var inMemoryStorage = new builder.MemoryBotStorage();
 
 // Email
 var transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'wr.proofofconcept@gmail.com',
-      pass: 'WR1234WR'
+      user: process.env.mailUser,
+      pass: process.env.mailPassword
     }
 });
 
 function sendEmail (subject, text) {
 var mailOptions = {
-    from: 'wr.proofofconcept',
-    to: 'karim.attia@synpulse.com',
+    from: process.env.mailFrom,
+    to: process.env.mailTo,
     subject: subject,
     text: text
 };
 transporter.sendMail(mailOptions, function(error, info){
     if (error) {
-      console.log(error);
+      console.log("Fehler Email Versand: " + error);
     } else {
-      console.log('Email sent: ' + info.response);
+      console.log("Email sent to: " + process.env.mailTo + "<br>" + info.response);
     }
     }); 
 }
@@ -64,7 +64,8 @@ var bot = new builder.UniversalBot(connector, {
     }
 });
 
-bot.set('storage', tableStorage);
+//bot.set('storage', tableStorage);
+bot.set('storage', inMemoryStorage);
 
 
 // Welcome message
@@ -113,7 +114,6 @@ bot.dialog('useCaseChoice', [
                 break;
             case "Hilfe / Anleitung":
                 session.send("Die Hilfefunktion ist momentan noch nicht implementiert.");
-                sendEmail("Test Subject", "Test Text");
                 session.beginDialog("End");
                 break;
             default:
@@ -188,9 +188,9 @@ bot.dialog('Cancel', [
 bot.dialog('Kontonummer', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 7-stellige Kontonummer aus auschliesslich Zahlen an.", "1234567", "1234567", "123456", "123456"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 7-stellige Kontonummer aus auschliesslich Zahlen an. <br> Eine Kontonummer hat dieses Format: _1234567_", "1234567", "1234567", "123456", "123456"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre Kontonummer?", "1234567", "1234567", "123456", "123456"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre Kontonummer? <br> Eine Kontonummer hat dieses Format: _1234567_", "1234567", "1234567", "123456", "123456"));
         }
     },
     function (session, results) {
@@ -255,9 +255,9 @@ bot.dialog('Termin', [
 bot.dialog('Referenzkonto', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige IBAN ein.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige IBAN ein. <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die IBAN ihres Referenzkontos, auf welches ein allfälliges Restguthaben überwiesen werden soll?", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die IBAN ihres Referenzkontos, auf welches ein allfälliges Restguthaben überwiesen werden soll? <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         }
     },
     function (session, results) {
@@ -333,9 +333,9 @@ function generateCreditCardMail (kontonummer, kreditkartennummer, unterschrift) 
 bot.dialog('Kreditkartennummer', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige Kreditkartennummer ein.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige Kreditkartennummer ein. <br> Eine Kreditkartennummer hat dieses Format: _4111 1111 1111 1111_", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die Kreditkartennummer Ihrer Kreditkarte, welche Sie auflösen wollen?", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die Kreditkartennummer Ihrer Kreditkarte, welche Sie auflösen wollen? <br> Eine Kreditkartennummer hat dieses Format: _4111 1111 1111 1111_", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         }
     },
     function (session, results) {
