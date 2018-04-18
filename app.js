@@ -74,7 +74,7 @@ bot.on('conversationUpdate', function(session) {
         session.membersAdded.forEach(function(identity) {
             if (identity.id === session.address.bot.id) {
                 var customMessage = new builder.Message().address(session.address)
-                    .text("Guten Tag! Tippen Sie etwas, um den Chatbot zu starten.");
+                    .text("Guten Tag! Bitte tippen Sie etwas, um den Chatbot zu starten.");
                 bot.send(customMessage);
             }
         });
@@ -86,10 +86,11 @@ bot.on('conversationUpdate', function(session) {
 // Root Dialog: Refers to Use Case Choice
 bot.dialog('/', [
     function (session) {
+        session.send("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
+        session.send("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
         var frage = "Wie kann ich Ihnen heute helfen?";
         session.beginDialog('useCaseChoice', frage);
     }
-
 ]);
 
 // Auswahl des Use Case
@@ -97,8 +98,8 @@ bot.dialog('useCaseChoice', [
     function (session, frage) {
         //var frage = "Wie kann ich Ihnen heute helfen?";
         var choices = [
-            "Auflösung Konto",
-            "Auflösung Kreditkarte",
+            "Ich möchte ein Konto auflösen.",
+            "Ich möchte eine Kreditkarte auflösen.",
             "Hilfe / Anleitung",
         ];
         builder.Prompts.choice(session, frage, choices, {listStyle: builder.ListStyle["button"]});
@@ -106,10 +107,10 @@ bot.dialog('useCaseChoice', [
     function (session, results) {
         session.dialogData.useCase = results.response.entity;
         switch (session.dialogData.useCase) {
-            case "Auflösung Konto":
+            case "Ich möchte ein Konto auflösen.":
                 session.beginDialog("Auflösung Konto");
                 break;
-            case "Auflösung Kreditkarte":
+            case "Ich möchte eine Kreditkarte auflösen.":
                 session.beginDialog("Auflösung Kreditkarte");
                 break;
             case "Hilfe / Anleitung":
@@ -125,7 +126,7 @@ bot.dialog('useCaseChoice', [
 // Use Case Auflösung Kreditkarte
 bot.dialog('Auflösung Kreditkarte', [
     function (session) {
-        session.send("Sie befinden sich jetzt in der Kreditkartenauflösung. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
+        session.send("Sie befinden sich jetzt in der **Kreditkartenauflösung**. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
         session.beginDialog('Kontonummer');
     },
     function (session, results) {
@@ -143,8 +144,11 @@ bot.dialog('Auflösung Kreditkarte', [
 
 bot.dialog('Auflösung Konto', [
     function (session) {
-        session.send("Sie befinden sich jetzt in der Kontoauflösung. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
+        session.send("Sie befinden sich jetzt in der **Kontoauflösung**. Dafür brauche ich einige Angaben von Ihnen. <br> Sie können den Vorgang jederzeit abbrechen indem Sie _stop_ schreiben.");
         session.beginDialog('Kontonummer');
+    },
+    function (session, results) {
+        session.beginDialog('Familienname');
     },
     function (session, results) {
         session.beginDialog('Unterschrift');
@@ -188,14 +192,14 @@ bot.dialog('Cancel', [
 bot.dialog('Kontonummer', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 7-stellige Kontonummer aus auschliesslich Zahlen an. <br> Eine Kontonummer hat dieses Format: _1234567_", "1234567", "1234567", "123456", "123456"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 10-stellige **Kontonummer** aus auschliesslich Zahlen an, zum Beispiel _1234567890_.", "1234567890", "1234567890", "123456789", "123456789"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre Kontonummer? <br> Eine Kontonummer hat dieses Format: _1234567_", "1234567", "1234567", "123456", "123456"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre **Kontonummer**? <br> Eine Kontonummer ist 10-stellig und besteht ausschliesslich aus Zahlen, zum Beispiel _1234567890_.", "1234567890", "1234567890", "123456789", "123456789"));
         }
     },
     function (session, results) {
         session.userData.kontonummer = results.response;
-        var reg = new RegExp('^\[0-9]{7}$');
+        var reg = new RegExp('^\[0-9]{10}$');
         if (reg.test(session.userData.kontonummer)) {
             session.endDialogWithResult(results);
         } else {
@@ -206,22 +210,43 @@ bot.dialog('Kontonummer', [
 
 // Unterschrift
 bot.dialog('Unterschrift', [
-    function (session) {
-        var customMessage = new builder.Message(session)
-            .text("Haben Sie die Unterschrift des Kunden geprüft? <br> (Ja/Nein/Nicht nötig)")
-	            .suggestedActions(
-                builder.SuggestedActions.create(
-				session, [
-					builder.CardAction.imBack(session, "Ja", "Ja"),
-					builder.CardAction.imBack(session, "Nein", "Nein"),
-                    builder.CardAction.imBack(session, "Nicht nötig", "Nicht nötig"),
-				]
-			));
-        builder.Prompts.text(session, customMessage);
+    function (session, args) {
+        if (args && args.reprompt) {
+            builder.Prompts.text(session, messageWithSuggestedAction3(session, "Bitte prüfen Sie die **Unterschrift** des Kunden falls nötig und bestätigen mit _Ja_ oder _Nicht nötig_.", "Ja", "Ja", "Nein", "Nein", "Nicht nötig", "Nicht nötig"));
+        } else {
+            builder.Prompts.text(session, messageWithSuggestedAction3(session, "Haben Sie die **Unterschrift** des Kunden geprüft? <br> (Ja/Nein/Nicht nötig)", "Ja", "Ja", "Nein", "Nein", "Nicht nötig", "Nicht nötig"));
+        }    
+
     },
     function (session, results) {
         session.userData.unterschrift = results.response;
-        session.endDialogWithResult(results);
+        if (session.userData.unterschrift == "Ja" || session.userData.unterschrift == "Nicht nötig") {
+            session.endDialogWithResult(results);
+        } else {
+            session.replaceDialog('Unterschrift', { reprompt: true, });
+        }
+    }
+]);
+
+// Familienname
+bot.dialog('Familienname', [
+    function (session, args) {
+        if (args && args.reprompt) {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie Ihren Familiennamen bestehend aus ausschliesslich Buchstaben an.", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
+        } else {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihr Familienname?", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
+        }    
+    },
+    function (session, results) {
+        session.userData.familienname = results.response;
+        // uncomment the following lines and define reg in order to check the format of the name
+        //var reg = new RegExp('^\[0-9]{10}$');
+        //var reg = new RegExp('^\\p{L}+$');
+        //if (session.userData.familienname)) {
+            session.endDialogWithResult(results);
+        //} else {
+        //    session.replaceDialog('Familienname', { reprompt: true, });
+        //}
     }
 ]);
 
@@ -243,7 +268,7 @@ bot.dialog('Termin', [
         var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
         var today = convertDate(today);
         var lastDayOfMonth = convertDate(lastDayOfMonth);
-        builder.Prompts.time(session, messageWithSuggestedAction(session, "Auf welchen Zeitpunkt soll das Konto aufgelöst werden?", today, "Heute", lastDayOfMonth, "Ende Monat"));
+        builder.Prompts.time(session, messageWithSuggestedAction(session, "Auf welchen **Zeitpunkt** soll das Konto aufgelöst werden?", today, "Heute", lastDayOfMonth, "Ende Monat"));
     },
     function (session, results) {
         session.userData.termin = results.response.entity;
@@ -255,9 +280,9 @@ bot.dialog('Termin', [
 bot.dialog('Referenzkonto', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige IBAN ein. <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige **IBAN** ein. <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die IBAN ihres Referenzkontos, auf welches ein allfälliges Restguthaben überwiesen werden soll? <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **IBAN Ihres Referenzkontos**, auf welches ein allfälliges Restguthaben überwiesen werden soll? <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         }
     },
     function (session, results) {
@@ -275,19 +300,28 @@ bot.dialog('Referenzkonto', [
 
 // LetztesKonto
 bot.dialog('LetztesKonto', [
-    function (session) {
-        builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr letztes Konto bei uns? <br> (Ja/Nein)", "Ja", "Ja", "Nein", "Nein"));
+    function (session, args) {
+        if (args && args.reprompt) {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr **letztes Konto** bei uns? Bitte bestätigen Sie mit _Ja_ oder _Nein_.", "Ja", "Ja", "Nein", "Nein"));
+        } else {
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr **letztes Konto** bei uns? <br> (Ja/Nein)", "Ja", "Ja", "Nein", "Nein"));
+        }    
     },
     function (session, results) {
         session.userData.letztesKonto = results.response;
-        session.endDialogWithResult(results);
+        if (session.userData.letztesKonto == "Ja" || session.userData.letztesKonto == "Nein") {
+            session.endDialogWithResult(results);
+        } else {
+            session.replaceDialog('LetztesKonto', { reprompt: true, });
+        }
     }
+
 ]);
 
 // KontoauflösungZusammenfassung
 bot.dialog('KontoauflösungZusammenfassung', [
     function (session) {
-        var KontoMail = "konto;" + session.userData.kontonummer + ";" + "\nunterschrift;" + session.userData.unterschrift + ";" + "\ntermin;" + session.userData.termin + ";" + "\nreferenzkonto;" + session.userData.referenzkonto + ";" + "\nletztesKonto;" + session.userData.letztesKonto + ";";
+        var KontoMail = "konto;" + session.userData.kontonummer + ";" + "\nfamilienname;" + session.userData.familienname + ";" + "\nunterschrift;" + session.userData.unterschrift + ";" + "\ntermin;" + session.userData.termin + ";" + "\nreferenzkonto;" + session.userData.referenzkonto + ";" + "\nletztesKonto;" + session.userData.letztesKonto + ";";
         sendEmail("Kontoauflösung " + uuidv1(), KontoMail);
 
         var customMessage = new builder.Message(session)
@@ -300,13 +334,16 @@ bot.dialog('KontoauflösungZusammenfassung', [
 			"type": "Container",
 			"items": [
 				{   "type": "TextBlock",
-					"text": "Alles klar, ich habe die Kontoauflösung für Sie notiert. Hier die Angaben:",
+					"text": "Alles klar, ich habe die Kontoauflösung für Sie notiert und an den Roboter geschickt. Hier die Angaben:",
 					"wrap": true
 				},
 				{   "type": "FactSet",
 					"facts": [
 						{	"title": "Konto:",
 							"value": session.userData.kontonummer
+						},
+						{	"title": "Familienname:",
+							"value": session.userData.familienname
 						},
 						{	"title": "Unterschrift bestätigt:",
 							"value": session.userData.unterschrift
@@ -333,9 +370,9 @@ function generateCreditCardMail (kontonummer, kreditkartennummer, unterschrift) 
 bot.dialog('Kreditkartennummer', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige Kreditkartennummer ein. <br> Eine Kreditkartennummer hat dieses Format: _4111 1111 1111 1111_", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige **Kreditkartennummer** ein. <br> Eine Kreditkartennummer besteht aus 16 Zahlen, zum Beispiel _4111 1111 1111 1111_.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die Kreditkartennummer Ihrer Kreditkarte, welche Sie auflösen wollen? <br> Eine Kreditkartennummer hat dieses Format: _4111 1111 1111 1111_", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **Kreditkartennummer** Ihrer Kreditkarte, welche Sie auflösen wollen? <br> Eine Kreditkartennummer besteht aus 16 Zahlen, zum Beispiel _4111 1111 1111 1111_.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         }
     },
     function (session, results) {
@@ -366,7 +403,7 @@ bot.dialog('KreditkartenauflösungZusammenfassung', [
 			"items": [
 				{
 					"type": "TextBlock",
-					"text": "Alles klar, ich habe die Kontoauflösung für Sie notiert. Hier die Angaben:",
+					"text": "Alles klar, ich habe die Kreditkartenauflösung für Sie notiert und an den Roboter geschickt. Hier die Angaben:",
 					"wrap": true
 				},
 				{	"type": "FactSet",
@@ -393,6 +430,19 @@ function messageWithSuggestedAction (session, promptText, sendSuggestion1, displ
     session, [
     builder.CardAction.imBack(session, sendSuggestion1, displaySuggestion1),
     builder.CardAction.imBack(session, sendSuggestion2, displaySuggestion2),                    
+    ]
+    ));
+    return customMessagePrompt;
+}
+function messageWithSuggestedAction3 (session, promptText, sendSuggestion1, displaySuggestion1, sendSuggestion2, displaySuggestion2, sendSuggestion3, displaySuggestion3) {
+    var customMessagePrompt = new builder.Message(session)
+    .text(promptText)
+      .suggestedActions(
+        builder.SuggestedActions.create(
+    session, [
+    builder.CardAction.imBack(session, sendSuggestion1, displaySuggestion1),
+    builder.CardAction.imBack(session, sendSuggestion2, displaySuggestion2),                    
+    builder.CardAction.imBack(session, sendSuggestion3, displaySuggestion3),                    
     ]
     ));
     return customMessagePrompt;
