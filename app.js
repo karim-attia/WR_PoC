@@ -104,7 +104,7 @@ bot.on('conversationUpdate', function (message) {
                 setTimeout(function () {
                     bot.send(customMessage4);
                 }, 3000);
-                bot.beginDialog(message.address, 'Intents');
+                bot.beginDialog(message.address, '/');
             }
         });
     }
