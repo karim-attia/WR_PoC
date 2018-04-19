@@ -1,6 +1,7 @@
 // Add your requirements
 var restify = require('restify');
 var builder = require('botbuilder');
+//var botbuilder_azure = require("botbuilder-azure");
 var dotenv = require('dotenv'); 
 var validIBAN = require('IBAN');
 var validCreditCard = require('card-validator');
@@ -25,11 +26,11 @@ var connector = new builder.ChatConnector({
 // Listen for messages from users 
 server.post('/api/messages', connector.listen());
 
-// Bot storage
-//var tableName = 'botdata';
-//var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
-//var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
-var inMemoryStorage = new builder.MemoryBotStorage();
+// Luis variables
+var luisAppId = process.env.LuisAppId;
+var luisAPIKey = process.env.LuisAPIKey;
+var luisAPIHostName = process.env.LuisAPIHostName || 'westeurope.api.cognitive.microsoft.com';
+const LuisModelUrl = 'https://' + luisAPIHostName + '/luis/v2.0/apps/' + luisAppId + '?subscription-key=' + luisAPIKey;
 
 // Email
 var transporter = nodemailer.createTransport({
@@ -56,72 +57,101 @@ transporter.sendMail(mailOptions, function(error, info){
     }); 
 }
 
+// Bot storage
+//var tableName = 'botdata';
+//var azureTableClient = new botbuilder_azure.AzureTableClient(tableName, process.env['AzureWebJobsStorage']);
+//var tableStorage = new botbuilder_azure.AzureBotStorage({ gzipData: false }, azureTableClient);
+var inMemoryStorage = new builder.MemoryBotStorage();
 // Create your bot with a function to receive messages from the user
-var bot = new builder.UniversalBot(connector, {
-    localizerSettings: { 
-        botLocalePath: "./locale", 
-        defaultLocale: "de-DE"
-    }
-});
-
+var bot = new builder.UniversalBot(connector, {});
 //bot.set('storage', tableStorage);
 bot.set('storage', inMemoryStorage);
 
-
-// Welcome message
-bot.on('conversationUpdate', function(session) {
-    if (session.membersAdded) {
-        session.membersAdded.forEach(function(identity) {
-            if (identity.id === session.address.bot.id) {
-                var customMessage = new builder.Message().address(session.address)
-                    .text("Guten Tag! Bitte tippen Sie etwas, um den Chatbot zu starten.");
-                bot.send(customMessage);
+// Send welcome when conversation with bot is started, by initiating the root dialog
+bot.on('conversationUpdate', function (message) {
+    if (message.membersAdded) {
+        message.membersAdded.forEach(function (identity) {
+            if (identity.id === message.address.bot.id) {
+                bot.beginDialog(message.address, '/');
             }
         });
     }
 });
+
+// Main dialog with LUIS
+console.log('\n ----------------------------- This is a new message. -----------------------------\n ');
+console.log('LuisModelUrl: ' + LuisModelUrl);
+
+// Create a recognizer that gets intents from LUIS, and add it to the bot
+var recognizer = new builder.LuisRecognizer(LuisModelUrl);
 
 // Dialogs
 
 // Root Dialog: Refers to Use Case Choice
 bot.dialog('/', [
     function (session) {
-        session.send("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
-        session.send("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
+        var locale = "de";
+        session.preferredLocale(locale, function (err) {
+            if (err) {
+                session.error(err);
+            }
+        });
+        session.send("Guten Tag!");
+        session.sendTyping();
+        setTimeout(function () {
+            session.send("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
+            session.sendTyping();
+        }, 1500);
+        setTimeout(function () {
+            session.send("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
+            session.sendTyping();
+        }, 3000);
         var frage = "Wie kann ich Ihnen heute helfen?";
-        session.beginDialog('useCaseChoice', frage);
+        setTimeout(function () {
+            session.send(messageWithButtons(session, frage, "Ich möchte ein Konto auflösen.", "Ich möchte ein Konto auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Hilfe / Anleitung", "Hilfe / Anleitung"));
+        }, 4500);
+        session.beginDialog('Intents');
     }
 ]);
+
 
 // Auswahl des Use Case
 bot.dialog('useCaseChoice', [
     function (session, frage) {
-        //var frage = "Wie kann ich Ihnen heute helfen?";
-        var choices = [
+        /*var choices = [
             "Ich möchte ein Konto auflösen.",
             "Ich möchte eine Kreditkarte auflösen.",
             "Hilfe / Anleitung",
-        ];
-        builder.Prompts.choice(session, frage, choices, {listStyle: builder.ListStyle["button"]});
+        ];*/
+        session.send(messageWithButtons(session, frage, "Ich möchte ein Konto auflösen.", "Ich möchte ein Konto auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Hilfe / Anleitung", "Hilfe / Anleitung"));
+        session.beginDialog('Intents');
     },
-    function (session, results) {
-        session.dialogData.useCase = results.response.entity;
-        switch (session.dialogData.useCase) {
-            case "Ich möchte ein Konto auflösen.":
-                session.beginDialog("Auflösung Konto");
-                break;
-            case "Ich möchte eine Kreditkarte auflösen.":
-                session.beginDialog("Auflösung Kreditkarte");
-                break;
-            case "Hilfe / Anleitung":
-                session.send("Die Hilfefunktion ist momentan noch nicht implementiert.");
-                session.beginDialog("End");
-                break;
-            default:
-                session.endDialog();
-        }
-    }
 ]);
+
+
+// Dialog choice
+var intents = new builder.IntentDialog({ recognizers: [recognizer] })
+.matches('Auflösung Kreditkarte', (session) => {
+    console.log("LUIS: Auflösung Kreditkarte")
+    session.beginDialog('Auflösung Kreditkarte', session.userData.profile);
+})
+.matches('Auflösung Konto', (session) => {
+    console.log("LUIS: Auflösung Konto")
+    session.beginDialog('Auflösung Konto', session.userData.profile);
+})
+.matches('Hilfe / Anleitung', (session) => {
+    console.log("LUIS: Hilfe / Anleitung")
+    session.send("Die Hilfefunktion ist momentan noch nicht implementiert.");
+    session.beginDialog("End");
+})
+.onDefault((session) => {
+    var frage = 'Ich konnte Ihre Nachricht \"' + session.message.text + '\" nicht verstehen. Bitte wählen Sie eine Option von den Knöpfen.';
+    session.beginDialog('useCaseChoice', frage);
+});
+
+//bot.dialog('/', intents);    
+bot.dialog("Intents", intents);
+
 
 // Use Case Auflösung Kreditkarte
 bot.dialog('Auflösung Kreditkarte', [
@@ -169,7 +199,7 @@ bot.dialog('Auflösung Konto', [
     }
 ]);
 
-// Direkt auf useCaseChoice verlinken?
+// Dialogende
 bot.dialog('End', [
     function (session) {
         var frage = "Kann ich Ihnen sonst noch irgendwie weiterhelfen?";
@@ -445,5 +475,19 @@ function messageWithSuggestedAction3 (session, promptText, sendSuggestion1, disp
     builder.CardAction.imBack(session, sendSuggestion3, displaySuggestion3),                    
     ]
     ));
+    return customMessagePrompt;
+}
+
+function messageWithButtons (session, promptText, button1, displaybutton1, button2, displaybutton2, button3, displaybutton3) {
+    var card = new builder.ThumbnailCard(session)
+    .buttons([
+        new builder.CardAction.imBack(session, button1, displaybutton1),
+        new builder.CardAction.imBack(session, button2, displaybutton2),
+        new builder.CardAction.imBack(session, button3, displaybutton3),
+    ]
+    );
+    var customMessagePrompt = new builder.Message(session)
+        .text(promptText)
+        .addAttachment(card);
     return customMessagePrompt;
 }
