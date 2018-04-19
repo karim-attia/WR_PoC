@@ -101,15 +101,15 @@ bot.dialog('/', [
         setTimeout(function () {
             session.send("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
             session.sendTyping();
-        }, 1500);
+        }, 1000);
         setTimeout(function () {
             session.send("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
             session.sendTyping();
-        }, 3000);
+        }, 2000);
         var frage = "Wie kann ich Ihnen heute helfen?";
         setTimeout(function () {
             session.send(messageWithButtons(session, frage, "Ich möchte ein Konto auflösen.", "Ich möchte ein Konto auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Ich möchte eine Kreditkarte auflösen.", "Hilfe / Anleitung", "Hilfe / Anleitung"));
-        }, 4500);
+        }, 3000);
         session.beginDialog('Intents');
     }
 ]);
