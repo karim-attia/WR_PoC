@@ -82,6 +82,7 @@ bot.on('conversationUpdate', function (message) {
     if (message.membersAdded) {
         message.membersAdded.forEach(function (identity) {
             if (identity.id === message.address.bot.id) {
+                /*
                 var customMessage1 = new builder.Message().address(message.address).text("Guten Tag!");
                 var customMessage2 = new builder.Message().address(message.address).text("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
                 var customMessage3 = new builder.Message().address(message.address).text("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
@@ -104,6 +105,7 @@ bot.on('conversationUpdate', function (message) {
                 //setTimeout(function () {
                     bot.send(customMessage4);
                 //}, 3000);
+                */
                 bot.beginDialog(message.address, '/');
             }
         });
@@ -128,6 +130,30 @@ bot.dialog('/', [
                 session.error(err);
             }
         });
+        var customMessage1 = new builder.Message().address(session.address).text("Guten Tag!");
+        var customMessage2 = new builder.Message().address(session.address).text("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
+        var customMessage3 = new builder.Message().address(session.address).text("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
+        var frage = "Wie kann ich Ihnen heute helfen?";
+        var customMessage4 = new builder.Message().address(session.address)
+        .addAttachment(new builder.HeroCard()
+            .text(frage)
+            .buttons([
+                builder.CardAction.imBack(null, 'Ich möchte ein Konto auflösen', 'Ich möchte ein Konto auflösen'),
+                builder.CardAction.imBack(null, 'Ich möchte eine Kreditkarte auflösen', 'Ich möchte eine Kreditkarte auflösen'),
+                builder.CardAction.imBack(null, 'Hilfe / Anleitung', 'Hilfe / Anleitung')
+            ]));
+        session.send(customMessage1);
+        //setTimeout(function () {
+            session.send(customMessage2);
+        //}, 1000);
+        //setTimeout(function () {
+            session.send(customMessage3);
+        //}, 2000);
+        //setTimeout(function () {
+            session.send(customMessage4);
+        //}, 3000);
+
+
         // Done in welcome message
         /*
         session.send("Guten Tag!");
