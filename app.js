@@ -93,8 +93,7 @@ bot.on('conversationUpdate', function (message) {
                         builder.CardAction.imBack(null, 'Ich möchte ein Konto auflösen', 'Ich möchte ein Konto auflösen'),
                         builder.CardAction.imBack(null, 'Ich möchte eine Kreditkarte auflösen', 'Ich möchte eine Kreditkarte auflösen'),
                         builder.CardAction.imBack(null, 'Hilfe / Anleitung', 'Hilfe / Anleitung')
-                    ])); 
-                
+                    ]));
                 bot.send(customMessage1);
                 setTimeout(function () {
                     bot.send(customMessage2);
@@ -105,7 +104,8 @@ bot.on('conversationUpdate', function (message) {
                 setTimeout(function () {
                     bot.send(customMessage4);
                 }, 3000);
-                bot.beginDialog(message.address, '/');
+                bot.beginDialog
+                bot.beginDialog(message.address, 'Intents');
             }
         });
     }
