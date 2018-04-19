@@ -95,15 +95,15 @@ bot.on('conversationUpdate', function (message) {
                         builder.CardAction.imBack(null, 'Hilfe / Anleitung', 'Hilfe / Anleitung')
                     ]));
                 bot.send(customMessage1);
-                setTimeout(function () {
+                //setTimeout(function () {
                     bot.send(customMessage2);
-                }, 1000);
-                setTimeout(function () {
+                //}, 1000);
+                //setTimeout(function () {
                     bot.send(customMessage3);
-                }, 2000);
-                setTimeout(function () {
+                //}, 2000);
+                //setTimeout(function () {
                     bot.send(customMessage4);
-                }, 3000);
+                //}, 3000);
                 bot.beginDialog(message.address, '/');
             }
         });
