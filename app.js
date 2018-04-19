@@ -67,12 +67,20 @@ var bot = new builder.UniversalBot(connector, {});
 //bot.set('storage', tableStorage);
 bot.set('storage', inMemoryStorage);
 
+/*
+// Welcome message
+bot.on('conversationUpdate', function(session) {
+    if (session.membersAdded) {
+        session.membersAdded.forEach(function(identity) {
+            if (identity.id === session.address.bot.id) {
+*/
+
 // Send welcome when conversation with bot is started, by initiating the root dialog
-bot.on('conversationUpdate', function (message) {
-    if (message.membersAdded) {
-        message.membersAdded.forEach(function (identity) {
-            if (identity.id === message.address.bot.id) {
-                bot.beginDialog(message.address, '/');
+bot.on('conversationUpdate', function (session) {
+    if (session.membersAdded) {
+        session.membersAdded.forEach(function (identity) {
+            if (identity.id === session.address.bot.id) {
+                bot.beginDialog(session.address, '/');
             }
         });
     }
