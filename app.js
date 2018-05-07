@@ -84,7 +84,7 @@ bot.on('conversationUpdate', function (message) {
             if (identity.id === message.address.bot.id) {
                 var customMessage1 = new builder.Message().address(message.address).text("Guten Tag!");
                 var customMessage2 = new builder.Message().address(message.address).text("Mit diesem Chatbot können Sie einfach die Daten für eine Konto- oder Kreditkartenschliessung erfassen. Der Chatbot wird Sie durch die Abfrage der nötigen Daten führen und die Daten danach einem Roboter zur Verfügung stellen. Dieser Roboter erstellt dann mit den Daten einen Vorgang in Agree21 für Sie, wodurch Sie sich einiges an manueller Arbeit einsparen.");
-                var customMessage3 = new builder.Message().address(message.address).text("Oftmals hat es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
+                var customMessage3 = new builder.Message().address(message.address).text("Oftmals gibt es in den Dialogfeldern oder oberhalb Ihres Textfeldes Knöpfe mit Text. Wenn Sie auf diese klicken, senden Sie diesen Text, wie wenn Sie ihn selbst geschrieben hätten. Somit müssen Sie weniger tippen. Probieren Sie es gleich aus, indem Sie im Dialogfeld unten auf einen Knopf drücken.");
                 var frage = "Wie kann ich Ihnen heute helfen?";
                 var customMessage4 = new builder.Message().address(message.address).text('Bitte klicken Sie auf _Start_, um den Chatbot zu starten.').addAttachment(new builder.HeroCard()
                     .buttons([
