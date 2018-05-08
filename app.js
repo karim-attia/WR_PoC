@@ -181,7 +181,7 @@ var intents = new builder.IntentDialog({ recognizers: [recognizer] })
     session.beginDialog('useCaseChoice', frage);
 });
 
-//bot.dialog('/', intents);    
+//bot.dialog('/', intents);
 bot.dialog("Intents", intents);
 
 
@@ -256,7 +256,7 @@ bot.dialog('Kontonummer', [
         if (args && args.reprompt) {
             builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine 10-stellige **Kontonummer** aus auschliesslich Zahlen an, zum Beispiel _1234567890_.", "1234567890", "1234567890", "123456789", "123456789"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihre **Kontonummer**? <br> Eine Kontonummer ist 10-stellig und besteht ausschliesslich aus Zahlen, zum Beispiel _1234567890_.", "1234567890", "1234567890", "123456789", "123456789"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **Kontonummer** des Kunden? <br> Eine Kontonummer ist 10-stellig und besteht ausschliesslich aus Zahlen, zum Beispiel _1234567890_.", "1234567890", "1234567890", "123456789", "123456789"));
         }
     },
     function (session, results) {
@@ -282,7 +282,7 @@ bot.dialog('Unterschrift', [
     },
     function (session, results) {
         session.userData.unterschrift = results.response;
-        if (session.userData.unterschrift == "Ja" || session.userData.unterschrift == "Nicht nötig") {
+        if (session.userData.unterschrift == "Ja" || session.userData.unterschrift == "Nicht nötig"|| session.userData.unterschrift == "ja") {
             session.endDialogWithResult(results);
         } else {
             session.replaceDialog('Unterschrift', { reprompt: true, });
@@ -294,9 +294,9 @@ bot.dialog('Unterschrift', [
 bot.dialog('Familienname', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie Ihren Familiennamen bestehend aus ausschliesslich Buchstaben an.", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie den **Familiennamen** des Kunden bestehend aus ausschliesslich Buchstaben an.", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet Ihr Familienname?", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet der **Familienname** des Kunden?", "Gollwitzer", "Gollwitzer", "Attia", "Attia"));
         }    
     },
     function (session, results) {
@@ -327,10 +327,14 @@ function convertDate(inputDate) {
 bot.dialog('Termin', [
     function (session) {
         var today = new Date();
+        if (today.getDate() < 15) {var middleOfMonth = new Date(today.getFullYear(), today.getMonth(), 15);} else {var middleOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 15)};
         var lastDayOfMonth = new Date(today.getFullYear(), today.getMonth()+1, 0);
+        var firstDayOfNextMonth = new Date(today.getFullYear(), today.getMonth()+1, 1);
         var today = convertDate(today);
+        var middleOfMonth = convertDate(middleOfMonth);
         var lastDayOfMonth = convertDate(lastDayOfMonth);
-        builder.Prompts.time(session, messageWithSuggestedAction(session, "Auf welchen **Zeitpunkt** soll das Konto aufgelöst werden?", today, "Heute", lastDayOfMonth, "Ende Monat"));
+        var firstDayOfNextMonth = convertDate(firstDayOfNextMonth);
+        builder.Prompts.time(session, messageWithSuggestedAction4(session, "Auf welchen **Zeitpunkt** soll das Konto aufgelöst werden?", today, "Heute", middleOfMonth, "Mitte Monat", lastDayOfMonth, "Ende Monat", firstDayOfNextMonth, "Anfang nächster Monat"));
     },
     function (session, results) {
         session.userData.termin = results.response.entity;
@@ -344,7 +348,7 @@ bot.dialog('Referenzkonto', [
         if (args && args.reprompt) {
             builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige **IBAN** ein. <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **IBAN Ihres Referenzkontos**, auf welches ein allfälliges Restguthaben überwiesen werden soll? <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **IBAN des Referenzkontos**, auf welches ein allfälliges Restguthaben überwiesen werden soll? <br> Eine IBAN hat dieses Format: _DE15 0076 8300 1314 5710 3_.", "DE15 0076 8300 1314 5710 30", "DE15 0076 8300 1314 5710 30", "CH15 0076 8300 1314 5710 3", "CH15 0076 8300 1314 5710 3"));
         }
     },
     function (session, results) {
@@ -364,14 +368,14 @@ bot.dialog('Referenzkonto', [
 bot.dialog('LetztesKonto', [
     function (session, args) {
         if (args && args.reprompt) {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr **letztes Konto** bei uns? Bitte bestätigen Sie mit _Ja_ oder _Nein_.", "Ja", "Ja", "Nein", "Nein"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies das **letzte Konto** des Kunden bei uns? Bitte bestätigen Sie mit _Ja_ oder _Nein_.", "Ja", "Ja", "Nein", "Nein"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies Ihr **letztes Konto** bei uns? <br> (Ja/Nein)", "Ja", "Ja", "Nein", "Nein"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Ist dies das **letzte Konto** des Kunden bei uns? <br> (Ja/Nein)", "Ja", "Ja", "Nein", "Nein"));
         }    
     },
     function (session, results) {
         session.userData.letztesKonto = results.response;
-        if (session.userData.letztesKonto == "Ja" || session.userData.letztesKonto == "Nein") {
+        if (session.userData.letztesKonto == "Ja" || session.userData.letztesKonto == "Nein" || session.userData.letztesKonto == "ja" || session.userData.letztesKonto == "nein") {
             session.endDialogWithResult(results);
         } else {
             session.replaceDialog('LetztesKonto', { reprompt: true, });
@@ -434,7 +438,7 @@ bot.dialog('Kreditkartennummer', [
         if (args && args.reprompt) {
             builder.Prompts.text(session, messageWithSuggestedAction(session, "Bitte geben Sie eine gültige **Kreditkartennummer** ein. <br> Eine Kreditkartennummer besteht aus 16 Zahlen, zum Beispiel _4111 1111 1111 1111_.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         } else {
-            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **Kreditkartennummer** Ihrer Kreditkarte, welche Sie auflösen wollen? <br> Eine Kreditkartennummer besteht aus 16 Zahlen, zum Beispiel _4111 1111 1111 1111_.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
+            builder.Prompts.text(session, messageWithSuggestedAction(session, "Wie lautet die **Kreditkartennummer** der Kreditkarte, welche Sie auflösen wollen? <br> Eine Kreditkartennummer besteht aus 16 Zahlen, zum Beispiel _4111 1111 1111 1111_.", "4111 1111 1111 1111", "4111 1111 1111 1111", "4111 1111 1111 11112", "4111 1111 1111 1112"));
         }
     },
     function (session, results) {
@@ -505,6 +509,20 @@ function messageWithSuggestedAction3 (session, promptText, sendSuggestion1, disp
     builder.CardAction.imBack(session, sendSuggestion1, displaySuggestion1),
     builder.CardAction.imBack(session, sendSuggestion2, displaySuggestion2),                    
     builder.CardAction.imBack(session, sendSuggestion3, displaySuggestion3),                    
+    ]
+    ));
+    return customMessagePrompt;
+}
+function messageWithSuggestedAction4 (session, promptText, sendSuggestion1, displaySuggestion1, sendSuggestion2, displaySuggestion2, sendSuggestion3, displaySuggestion3, sendSuggestion4, displaySuggestion4) {
+    var customMessagePrompt = new builder.Message(session)
+    .text(promptText)
+      .suggestedActions(
+        builder.SuggestedActions.create(
+    session, [
+    builder.CardAction.imBack(session, sendSuggestion1, displaySuggestion1),
+    builder.CardAction.imBack(session, sendSuggestion2, displaySuggestion2),                    
+    builder.CardAction.imBack(session, sendSuggestion3, displaySuggestion3),                    
+    builder.CardAction.imBack(session, sendSuggestion4, displaySuggestion4),                    
     ]
     ));
     return customMessagePrompt;
